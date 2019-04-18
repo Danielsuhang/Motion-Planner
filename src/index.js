@@ -20,7 +20,6 @@ class Square extends React.Component {
               divStyle: {background: 'green'}
             })
           }}>
-            {this.props.value}
           </button>
         );
       }
@@ -33,7 +32,7 @@ class Square extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            squares: Array(400).fill(null),
+            squares: this.initBoardData(20, 20) 
         };
     }
     //Initialize Array with Cell Objects
@@ -52,32 +51,29 @@ class Square extends React.Component {
       }
       return data;
     }
-    handleClick(i) {
+    handleClick(i, j) {
         /* Create a copy of our squares array to make it immutable */ 
         const squares = this.state.squares.slice();
         this.setState({squares: squares});
         /* If someone has won or if that square is already selected, do nothing when Square is clicked*/
     }
-    renderSquare(i) {
-      return <Square key={i} value={this.state.squares[i]}
+    renderSquare(i, j) {
+      return <Square key={i * j + i + j + 2 * i} value={this.state.squares[i][j]}
       /* Pass in onClick function into Square */
-      onClick={() => this.handleClick(i)}
+      onClick={() => this.handleClick(i, j)}
       />;
     }
-    callChildren(start, end) {
+    callChildren(row, size) {
       let children = [];
-      for (let i = start; i < end; i++) {
-        children.push(this.renderSquare(i));
+      for (let i = 0; i < size; i++) {
+        children.push(this.renderSquare(row,i));
       }
       return children;
     }
     createGrid(size) {
       let grid = []
-      let counter = 0;
       for (let i = 0; i < size; i++) {
-        
-        grid.push(<div className="board-row" key={i}>{this.callChildren(counter, counter + size)}</div>)
-        counter += size;
+        grid.push(<div className="board-row" key={i}>{this.callChildren(i, size)}</div>)
       }
       return grid;
     }
@@ -86,7 +82,7 @@ class Square extends React.Component {
   
       return (
         <div>
-          {this.createGrid(Math.sqrt(this.state.squares.length))}
+          {this.createGrid(this.state.squares.length)}
           {/* <div className="board-row">
             {this.renderSquare(0)}
             {this.renderSquare(1)}
