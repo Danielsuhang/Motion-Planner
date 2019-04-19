@@ -10,11 +10,16 @@ class Board extends React.Component {
     this.state = {
       rows: this.props.row,
       columns: this.props.column,
+      areaVisited: [],
       squares: this.initBoardData(this.props.row, this.props.column),
-      startPoint: this.props.startPoint,
-      obstacle: this.props.obstacles, 
+      currentLocation: this.props.startPoint,
+      obstacle: this.props.obstacles,
     };
-    this.changeColor = this.changeColor.bind(this);
+
+    //Bindings
+    this.nextStep = this.nextStep.bind(this);
+    this.updateStartPoint = this.updateStartPoint.bind(this);
+    this.isCurrentLocation = this.isCurrentLocation.bind(this);
   }
   //Initialize Array with Cell Objects
   initBoardData(row, column) {
@@ -27,31 +32,92 @@ class Board extends React.Component {
           y: j,
           curr: false,
           visited: false,
-          color: 'white'
+          color: 'white',
+          orientation: 'right',
         }
-        if (i === this.props.startPoint[0] 
+        if (i === this.props.startPoint[0]
           && j === this.props.startPoint[1]) {
-            data[i][j].color = 'red';
+          data[i][j].color = 'red';
         }
-        else if (this.checkObstacle(i,j)) {
+        else if (this.checkObstacle(i, j)) {
           data[i][j].color = 'black';
         }
       }
     }
     return data;
   }
-  changeColor() {
+
+
+//Methods below update board after intialization
+
+  /*
+  Test Method: Moves start point diagonally until boundary hit, 
+  then moves horizontally/vertically
+  */
+  nextStep() {
+    let nextLocation = []
+    if (this.isLegalSquare(this.state.currentLocation[0] + 1,
+      this.state.currentLocation[1] + 1)) {
+      nextLocation[0] = this.state.currentLocation[0] + 1;
+      nextLocation[1] = this.state.currentLocation[1] + 1;
+      
+    }
+    else if (this.isLegalSquare(this.state.currentLocation[0] + 1,
+      this.state.currentLocation[1])) {
+      nextLocation[0] = this.state.currentLocation[0] + 1;
+      nextLocation[1] = this.state.currentLocation[1];
+    }
+    else if (this.isLegalSquare(this.state.currentLocation[0],
+      this.state.currentLocation[1] + 1)) {
+      nextLocation[0] = this.state.currentLocation[0];
+      nextLocation[1] = this.state.currentLocation[1] + 1;
+    }
+    else {
+      console.log("Edge Reached");
+      return;
+    }
+
+    //updates board information with new start point
+    this.updateStartPoint(this.state.currentLocation[0],
+      this.state.currentLocation[1], nextLocation[0], nextLocation[1]); 
+
+    this.setState({
+      currentLocation: nextLocation
+    })
+  }
+  updateStartPoint(i, j, newI, newJ) {
     let updatedData = this.state.squares.slice();
-    updatedData[5][5].color = "black";
+    updatedData[i][j].color = 'white';
+    updatedData[newI][newJ].color = 'red';
     this.setState({
       squares: updatedData
     })
   }
-  handleClick(i, j) {
-    /* Create a copy of our squares array to make it immutable */
-    const squares = this.state.squares.slice();
-    this.setState({ squares: squares });
+  /**
+   * Visibility Function: Defines what area the robot can see
+   * Narrow Cone Function
+   */
+  revealArea() {
+
   }
+
+
+//Helper methods
+
+  /*
+  Check if point is out of boundaries
+  */
+  isLegalSquare(i, j) {
+    return (i < this.props.row && i > 0
+      && j < this.props.column && j > 0);
+  }
+  
+  isCurrentLocation(i,j) {
+    return (i === this.state.currentLocation[0] && j === this.state.currentLocation[1]); 
+  }
+    /*****
+   * Handling Initialization of Board
+   */
   checkObstacle(row, column) {
     for (let i = 0; i < this.props.obstacles.length; i++) {
       let x = this.props.obstacles[i][0];
@@ -62,16 +128,39 @@ class Board extends React.Component {
     }
     return false;
   }
+
+
+//Event Handlers
+  /**
+   * Handles logic for what happens when the user clicks a square
+   * @param {The row coordinate of click} i 
+   * @param {The column coordinate of click} j 
+   */
+  handleClick(i, j) {
+    const squares = this.state.squares.slice();
+    this.setState({ squares: squares });
+  }
+
+
+
   renderSquare(i, j) {
+    let board = this.state.squares;
     let divStyle = {
-      background: this.state.squares[i][j].color
+      background: this.state.squares[i][j].color,
+      borderRight: (this.isCurrentLocation(i,j) && 
+      board[i][j].orientation === 'right') ? "4px solid #000000" : "1px solid #999",
+      borderLeft: (this.isCurrentLocation(i,j) && board[i][j].orientation === 'left')
+       ? "4px solid #000000" : "1px solid #999",
+       borderBottom: (this.isCurrentLocation(i,j) && board[i][j].orientation === 'bottom')
+       ? "4px solid #000000" : "1px solid #999",
+       borderTop: (this.isCurrentLocation(i,j) && board[i][j].orientation === 'top')
+       ? "4px solid #000000" : "1px solid #999",
     }
     return (
       <button key={i * j + i + j * 2} className="square" style={divStyle}>
       </button>
     )
   }
-
   callChildren(row, size) {
     let children = [];
     for (let i = 0; i < size; i++) {
@@ -89,25 +178,10 @@ class Board extends React.Component {
   render() {
     return (
       <div>
-        <Button varient="contained" color="primary" onClick={this.changeColor}>
+        <Button varient="contained" color="primary" onClick={this.nextStep}>
           Next
           </Button>
         {this.createGrid(this.state.squares.length)}
-        {/* <div className="board-row">
-            {this.renderSquare(0)}
-            {this.renderSquare(1)}
-            {this.renderSquare(2)}
-          </div>
-          <div className="board-row">
-            {this.renderSquare(3)}
-            {this.renderSquare(4)}
-            {this.renderSquare(5)}
-          </div>
-          <div className="board-row">
-            {this.renderSquare(6)}
-            {this.renderSquare(7)}
-            {this.renderSquare(8)}
-          </div> */}
       </div>
     );
   }
@@ -135,6 +209,6 @@ class Game extends React.Component {
 // ========================================
 
 ReactDOM.render(
-  <Game/>,
+  <Game />,
   document.getElementById('root')
 );
