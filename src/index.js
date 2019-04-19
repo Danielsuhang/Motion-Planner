@@ -19,6 +19,7 @@ class Board extends React.Component {
     //Bindings
     this.nextStep = this.nextStep.bind(this);
     this.updateStartPoint = this.updateStartPoint.bind(this);
+    this.revealArea = this.revealArea.bind(this);
     this.isCurrentLocation = this.isCurrentLocation.bind(this);
   }
   //Initialize Array with Cell Objects
@@ -31,16 +32,21 @@ class Board extends React.Component {
           x: i,
           y: j,
           curr: false,
-          visited: false,
+          visited: false, //If path has been visited
+          seen: false,  //If seen 
+          isObstacle: false,
           color: 'white',
           orientation: 'right',
         }
         if (i === this.props.startPoint[0]
           && j === this.props.startPoint[1]) {
           data[i][j].color = 'red';
+          data[i][j].visited = true;
+          data[i][j].seen = true;
         }
         else if (this.checkObstacle(i, j)) {
           data[i][j].color = 'black';
+          data[i][j].isObstacle = true;
         }
       }
     }
@@ -48,7 +54,7 @@ class Board extends React.Component {
   }
 
 
-//Methods below update board after intialization
+//Methods update board after intialization ==============
 
   /*
   Test Method: Moves start point diagonally until boundary hit, 
@@ -87,7 +93,7 @@ class Board extends React.Component {
   }
   updateStartPoint(i, j, newI, newJ) {
     let updatedData = this.state.squares.slice();
-    updatedData[i][j].color = 'white';
+    updatedData[i][j].color = (updatedData[i][j].seen) ? 'yellow' : 'white';
     updatedData[newI][newJ].color = 'red';
     this.setState({
       squares: updatedData
@@ -98,11 +104,26 @@ class Board extends React.Component {
    * Narrow Cone Function
    */
   revealArea() {
+    let currX = this.state.currentLocation[0];
+    let currY = this.state.currentLocation[1];
+    let updatedBoard = this.state.squares.slice();
+    if (this.isLegalSquare(currX, currY + 1)) {
+      updatedBoard[currX][currY + 1].color = 'yellow';
+      updatedBoard[currX][currY + 1].seen = true
+
+      if (this.isLegalSquare(currX, currY + 2)) {
+        updatedBoard[currX][currY + 2].color = 'yellow';
+        updatedBoard[currX][currY + 2].seen = true;
+      }
+    }
+    this.setState({
+      squares: updatedBoard
+    });
 
   }
 
 
-//Helper methods
+//Helper methods============================
 
   /*
   Check if point is out of boundaries
@@ -130,7 +151,7 @@ class Board extends React.Component {
   }
 
 
-//Event Handlers
+//Event Handlers=================================
   /**
    * Handles logic for what happens when the user clicks a square
    * @param {The row coordinate of click} i 
@@ -142,7 +163,7 @@ class Board extends React.Component {
   }
 
 
-
+//Initial Board Rendering ==============================
   renderSquare(i, j) {
     let board = this.state.squares;
     let divStyle = {
@@ -181,6 +202,10 @@ class Board extends React.Component {
         <Button varient="contained" color="primary" onClick={this.nextStep}>
           Next
           </Button>
+          <Button varient="contained" color="primary" onClick={this.revealArea}>
+         Reveal Area 
+          </Button>
+ 
         {this.createGrid(this.state.squares.length)}
       </div>
     );
@@ -189,6 +214,7 @@ class Board extends React.Component {
 
 class Game extends React.Component {
   render() {
+    //Define board parameters
     let obstacles = [[5, 4], [5, 3], [6, 6], [6, 2]];
     let startPoint = [15, 5];
     return (
@@ -197,6 +223,7 @@ class Game extends React.Component {
 
           <br />
           <Board startPoint={startPoint} obstacles={obstacles} row={20} column={20} />
+          
         </div>
         <div className="game-info">
         </div>
