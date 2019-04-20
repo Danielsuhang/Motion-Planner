@@ -19,7 +19,7 @@ class Board extends React.Component {
     //Bindings
     this.nextStep = this.nextStep.bind(this);
     this.updateStartPoint = this.updateStartPoint.bind(this);
-    this.revealArea = this.revealArea.bind(this);
+    this.moveBetweenNodes = this.moveBetweenNodes.bind(this);
     this.isCurrentLocation = this.isCurrentLocation.bind(this);
   }
   //Initialize Array with Cell Objects
@@ -36,7 +36,6 @@ class Board extends React.Component {
           seen: false,  //If seen 
           isObstacle: false,
           color: 'white',
-          orientation: 'right',
         }
         if (i === this.props.startPoint[0]
           && j === this.props.startPoint[1]) {
@@ -62,6 +61,9 @@ class Board extends React.Component {
   */
   nextStep() {
     let nextLocation = []
+    let updatedBoard = this.revealArea(this.state.squares, 
+      this.state.currentLocation[0], this.state.currentLocation[1]);
+
     if (this.isLegalSquare(this.state.currentLocation[0] + 1,
       this.state.currentLocation[1] + 1)) {
       nextLocation[0] = this.state.currentLocation[0] + 1;
@@ -82,14 +84,69 @@ class Board extends React.Component {
       console.log("Edge Reached");
       return;
     }
+    
 
     //updates board information with new start point
     this.updateStartPoint(this.state.currentLocation[0],
       this.state.currentLocation[1], nextLocation[0], nextLocation[1]); 
 
     this.setState({
+      squares: updatedBoard,
       currentLocation: nextLocation
     })
+  }
+  moveBetweenNodes(destI, destJ) {
+    let currX = this.state.currentLocation[0];
+    let currY = this.state.currentLocation[1];
+    //TODO: Check if path between I and J have been "seen"
+    if (!this.isLegalSquare(destI,destJ)) {
+      console.log("Illegal Node");
+      return;
+    }
+    if (destI !== currX && destJ !== currY) {
+      console.log("Diagonal Movement")
+      //TODO: Call moveDiagonalNodes
+    }
+    if (destI === currX && destJ === currY) {
+      console.log("Destination node is the same as current location");
+    }
+    let updatedBoard = this.state.squares.slice();
+    let currentLocation = this.state.currentLocation.slice();
+
+    //Define start and end nodes for path:
+    //Check if robot is moving along X or Y axis
+    //Check if robot is moving in the positive or negative direction
+    let start = destI !== currX ? Math.min(destI, currX) : Math.min(destJ, currY);
+    let end = destI !== currX ? Math.max(destI, currX) : Math.max(destJ, currY);
+    //Moving in Horizontal Direction
+    if (destI !== currX) {
+      for (let i = start; i <= end; i++) {
+        updatedBoard[i][currY].color = 'yellow'; 
+      }
+      updatedBoard[end][currY].color = 'red';
+      currentLocation[0] = end;
+      currentLocation[1] = currY;
+
+    }
+    //Moving in Vertical Direction
+    else {
+      for (let i = start; i <= end; i++) {
+        updatedBoard[currX][i].color = 'yellow';
+      }
+      updatedBoard[currX][end].color = 'red';
+      currentLocation[0] = currX;
+      currentLocation[1] = end;
+    }
+    //Reveal area in front of new point
+    updatedBoard = this.revealArea(updatedBoard, currentLocation[0], currentLocation[1]);
+
+    this.setState({
+      squares: updatedBoard,
+      currentLocation: currentLocation
+    })
+
+
+    
   }
   updateStartPoint(i, j, newI, newJ) {
     let updatedData = this.state.squares.slice();
@@ -103,22 +160,19 @@ class Board extends React.Component {
    * Visibility Function: Defines what area the robot can see
    * Narrow Cone Function
    */
-  revealArea() {
-    let currX = this.state.currentLocation[0];
-    let currY = this.state.currentLocation[1];
-    let updatedBoard = this.state.squares.slice();
+  revealArea(data, currX, currY) {
+    let updatedBoard = data;
+    updatedBoard[currX][currY].seen = true;
     if (this.isLegalSquare(currX, currY + 1)) {
       updatedBoard[currX][currY + 1].color = 'yellow';
-      updatedBoard[currX][currY + 1].seen = true
+      updatedBoard[currX][currY + 1].seen = true;
 
       if (this.isLegalSquare(currX, currY + 2)) {
         updatedBoard[currX][currY + 2].color = 'yellow';
         updatedBoard[currX][currY + 2].seen = true;
       }
     }
-    this.setState({
-      squares: updatedBoard
-    });
+    return updatedBoard;
 
   }
 
@@ -165,17 +219,8 @@ class Board extends React.Component {
 
 //Initial Board Rendering ==============================
   renderSquare(i, j) {
-    let board = this.state.squares;
     let divStyle = {
       background: this.state.squares[i][j].color,
-      borderRight: (this.isCurrentLocation(i,j) && 
-      board[i][j].orientation === 'right') ? "4px solid #000000" : "1px solid #999",
-      borderLeft: (this.isCurrentLocation(i,j) && board[i][j].orientation === 'left')
-       ? "4px solid #000000" : "1px solid #999",
-       borderBottom: (this.isCurrentLocation(i,j) && board[i][j].orientation === 'bottom')
-       ? "4px solid #000000" : "1px solid #999",
-       borderTop: (this.isCurrentLocation(i,j) && board[i][j].orientation === 'top')
-       ? "4px solid #000000" : "1px solid #999",
     }
     return (
       <button key={i * j + i + j * 2} className="square" style={divStyle}>
@@ -202,8 +247,9 @@ class Board extends React.Component {
         <Button varient="contained" color="primary" onClick={this.nextStep}>
           Next
           </Button>
-          <Button varient="contained" color="primary" onClick={this.revealArea}>
-         Reveal Area 
+          <Button varient="contained" color="primary" 
+          onClick={() => {this.moveBetweenNodes(this.state.currentLocation[0], this.state.currentLocation[1] + 5)}}>
+         Move
           </Button>
  
         {this.createGrid(this.state.squares.length)}
