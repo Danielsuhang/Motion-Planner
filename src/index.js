@@ -10,7 +10,7 @@ class Board extends React.Component {
     this.state = {
       rows: this.props.row,
       columns: this.props.column,
-      areaVisited: [],
+      areaVisited: [[this.props.row, this.props.column]],
       squares: this.initBoardData(this.props.row, this.props.column),
       currentLocation: this.props.startPoint,
       obstacle: this.props.obstacles,
@@ -21,6 +21,7 @@ class Board extends React.Component {
     this.updateStartPoint = this.updateStartPoint.bind(this);
     this.moveBetweenNodes = this.moveBetweenNodes.bind(this);
     this.isCurrentLocation = this.isCurrentLocation.bind(this);
+    this.reset = this.reset.bind(this);
   }
   //Initialize Array with Cell Objects
   initBoardData(row, column) {
@@ -59,6 +60,15 @@ class Board extends React.Component {
   Test Method: Moves start point diagonally until boundary hit, 
   then moves horizontally/vertically
   */
+  reset() {
+    this.setState({
+      areaVisited: [[this.props.row, this.props.column]],
+      currentLocation: this.props.startPoint,
+      squares: this.initBoardData(this.props.row, this.props.column),
+      obstacle: this.props.obstacles, 
+
+    })
+  }
   nextStep() {
     let nextLocation = []
     let updatedBoard = this.revealArea(this.state.squares, 
@@ -118,10 +128,14 @@ class Board extends React.Component {
     //Check if robot is moving in the positive or negative direction
     let start = destI !== currX ? Math.min(destI, currX) : Math.min(destJ, currY);
     let end = destI !== currX ? Math.max(destI, currX) : Math.max(destJ, currY);
+
+    let seenArea = this.state.areaVisited.slice();
     //Moving in Horizontal Direction
     if (destI !== currX) {
       for (let i = start; i <= end; i++) {
         updatedBoard[i][currY].color = 'yellow'; 
+        updatedBoard[i][currY].seen = true;
+        seenArea.push([i, currY]);
       }
       updatedBoard[end][currY].color = 'red';
       currentLocation[0] = end;
@@ -132,17 +146,21 @@ class Board extends React.Component {
     else {
       for (let i = start; i <= end; i++) {
         updatedBoard[currX][i].color = 'yellow';
+        updatedBoard[currX][i].seen = true;
+        seenArea.push([currX, i]);
       }
       updatedBoard[currX][end].color = 'red';
       currentLocation[0] = currX;
       currentLocation[1] = end;
     }
     //Reveal area in front of new point
-    updatedBoard = this.revealArea(updatedBoard, currentLocation[0], currentLocation[1]);
+    updatedBoard = this.revealArea(updatedBoard, 
+      currentLocation[0], currentLocation[1], seenArea);
 
     this.setState({
       squares: updatedBoard,
-      currentLocation: currentLocation
+      currentLocation: currentLocation,
+      areaVisited: seenArea
     })
 
 
@@ -160,16 +178,18 @@ class Board extends React.Component {
    * Visibility Function: Defines what area the robot can see
    * Narrow Cone Function
    */
-  revealArea(data, currX, currY) {
+  revealArea(data, currX, currY, seenArea) {
     let updatedBoard = data;
     updatedBoard[currX][currY].seen = true;
     if (this.isLegalSquare(currX, currY + 1)) {
       updatedBoard[currX][currY + 1].color = 'yellow';
       updatedBoard[currX][currY + 1].seen = true;
+      seenArea.push([currX][currY + 1]);
 
       if (this.isLegalSquare(currX, currY + 2)) {
         updatedBoard[currX][currY + 2].color = 'yellow';
         updatedBoard[currX][currY + 2].seen = true;
+        seenArea.push([currX][currY + 1]);
       }
     }
     return updatedBoard;
@@ -250,6 +270,10 @@ class Board extends React.Component {
           <Button varient="contained" color="primary" 
           onClick={() => {this.moveBetweenNodes(this.state.currentLocation[0], this.state.currentLocation[1] + 5)}}>
          Move
+          </Button>
+          <Button varient="contained" color="primary" 
+          onClick={this.reset}>
+        Reset 
           </Button>
  
         {this.createGrid(this.state.squares.length)}
