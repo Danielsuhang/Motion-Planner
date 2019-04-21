@@ -31,6 +31,9 @@ class Board extends React.Component {
 
     this.state.squares = this.revealArea(this.state.squares, this.props.startPoint[0],
       this.props.startPoint[1], this.state.areaVisited, "bot");
+
+    //Initialize graph nodes 
+    this.state.squares = this.initializeGraph(this.state.squares);
   }
   //Initialize Array with Cell Objects
   initBoardData(row, column) {
@@ -44,6 +47,7 @@ class Board extends React.Component {
           seen: false,  //If seen 
           isObstacle: false,
           color: 'white',
+          outEdge: [],
         }
         if (i === this.props.startPoint[0]
           && j === this.props.startPoint[1]) {
@@ -147,6 +151,15 @@ class Board extends React.Component {
       console.log("Destination node is the same as current location");
       return;
     }
+    //These need to be updated if more than one square is allowed to be traversed
+    if (!this.state.squares[destI][destJ].seen) {
+      console.log("Destination node has not been seen, cannot traverse");
+      return;
+    }
+    if (this.state.squares[destI][destJ].isObstacle) {
+      console.log("Cannot traverse onto obstacle");
+      return;
+    }
     let updatedBoard = this.state.squares.slice();
     let currentLocation = this.state.currentLocation.slice();
 
@@ -245,25 +258,37 @@ class Board extends React.Component {
   revealLeftArea(data, currX, currY, seenArea) {
     let updatedBoard = data;
     updatedBoard[currX][currY].seen = true;
-    if (this.isLegalSquare(currX, currY - 1)) {
-      updatedBoard[currX][currY - 1].color = 'yellow';
-      updatedBoard[currX][currY - 1].seen = true;
-      seenArea.push([currX][currY - 1]);
+    let obsX = currX;
+    let obsY = currY - 1;
+    if (this.isLegalSquare(obsX, obsY)) {
+      updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard, 
+        obsX, obsY);
+      updatedBoard[obsX][obsY].seen = true;
+      seenArea.push([obsX][obsY]);
 
-      if (this.isLegalSquare(currX, currY - 2)) {
-        updatedBoard[currX][currY - 2].color = 'yellow';
-        updatedBoard[currX][currY - 2].seen = true;
-        seenArea.push([currX][currY - 2]);
+      obsX = currX;
+      obsY = currY - 2;
+      if (this.isLegalSquare(obsX, obsY)) {
+        updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard, 
+          obsX, obsY);
+        updatedBoard[obsX][obsY].seen = true;
+        seenArea.push([obsX][obsY]);
       }
-      if (this.isLegalSquare(currX - 1, currY - 2)) {
-        updatedBoard[currX - 1][currY - 2].color = 'yellow';
-        updatedBoard[currX - 1][currY - 2].seen = true;
-        seenArea.push([currX - 1][currY - 2]);
+      obsX = currX - 1;
+      obsY = currY - 2;
+      if (this.isLegalSquare(obsX, obsY)) {
+        updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard, 
+          obsX, obsY);
+        updatedBoard[obsX][obsY].seen = true;
+        seenArea.push([obsX][obsY]);
       }
-      if (this.isLegalSquare(currX + 1, currY - 2)) {
-        updatedBoard[currX + 1][currY - 2].color = 'yellow';
-        updatedBoard[currX + 1][currY - 2].seen = true;
-        seenArea.push([currX + 1][currY - 2]);
+      obsX = currX + 1;
+      obsY = currY - 2;
+      if (this.isLegalSquare(obsX, obsY)) {
+        updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard, 
+          obsX, obsY);
+        updatedBoard[obsX][obsY].seen = true;
+        seenArea.push([obsX][obsY]);
       }
     }
     return updatedBoard;
@@ -271,25 +296,38 @@ class Board extends React.Component {
   revealTopArea(data, currX, currY, seenArea) {
     let updatedBoard = data;
     updatedBoard[currX][currY].seen = true;
-    if (this.isLegalSquare(currX - 1, currY)) {
-      updatedBoard[currX - 1][currY].color = 'yellow';
-      updatedBoard[currX - 1][currY].seen = true;
-      seenArea.push([currX - 1][currY]);
+    let obsX = currX - 1;
+    let obsY = currY;
+    if (this.isLegalSquare(obsX, obsY)) {
+      
+      updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard,
+        obsX, obsY);
+      updatedBoard[obsX][obsY].seen = true;
+      seenArea.push([obsX][obsY]);
 
-      if (this.isLegalSquare(currX - 2, currY)) {
-        updatedBoard[currX - 2][currY].color = 'yellow';
-        updatedBoard[currX - 2][currY].seen = true;
-        seenArea.push([currX - 2][currY]);
+      obsX = currX - 2;
+      obsY = currY;
+      if (this.isLegalSquare(obsX, obsY)) {
+        updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard,
+           obsX, obsY);
+        updatedBoard[obsX][obsY].seen = true;
+        seenArea.push([obsX][obsY]);
       }
-      if (this.isLegalSquare(currX - 2, currY + 1)) {
-        updatedBoard[currX - 2][currY + 1].color = 'yellow';
-        updatedBoard[currX - 2][currY + 1].seen = true;
-        seenArea.push([currX - 2][currY + 1]);
+      obsX = currX - 2;
+      obsY = currY + 1;
+      if (this.isLegalSquare(obsX, obsY)) {
+        updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard,
+           obsX, obsY);
+        updatedBoard[obsX][obsY].seen = true;
+        seenArea.push([obsX][obsY]);
       }
-      if (this.isLegalSquare(currX - 2, currY - 1)) {
-        updatedBoard[currX - 2][currY - 1].color = 'yellow';
-        updatedBoard[currX - 2][currY - 1].seen = true;
-        seenArea.push([currX - 2][currY - 1]);
+      obsX = currX - 2;
+      obsY = currY - 1
+      if (this.isLegalSquare(obsX, obsY)) {
+        updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard,
+           obsX, obsY);
+        updatedBoard[obsX][obsY].seen = true;
+        seenArea.push([obsX][obsY]);
       }
     }
     return updatedBoard;
@@ -297,25 +335,33 @@ class Board extends React.Component {
   revealBotArea(data, currX, currY, seenArea) {
     let updatedBoard = data;
     updatedBoard[currX][currY].seen = true;
-    if (this.isLegalSquare(currX + 1, currY)) {
-      updatedBoard[currX + 1][currY].color = 'yellow';
-      updatedBoard[currX + 1][currY].seen = true;
-      seenArea.push([currX + 1][currY]);
+    let obsX = currX + 1;
+    let obsY = currY
+    if (this.isLegalSquare(obsX, obsY)) {
+      updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard, obsX, obsY);
+      updatedBoard[obsX][obsY].seen = true;
+      seenArea.push([obsX][obsY]);
 
-      if (this.isLegalSquare(currX + 2, currY)) {
-        updatedBoard[currX + 2][currY].color = 'yellow';
-        updatedBoard[currX + 2][currY].seen = true;
-        seenArea.push([currX + 2][currY]);
+      obsX = currX + 2;
+      obsY = currY;
+      if (this.isLegalSquare(obsX, obsY)) {
+        updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard, obsX, obsY);
+        updatedBoard[obsX][obsY].seen = true;
+        seenArea.push([obsX][obsY]);
       }
-      if (this.isLegalSquare(currX + 2, currY - 1)) {
-        updatedBoard[currX + 2][currY - 1].color = 'yellow';
-        updatedBoard[currX + 2][currY - 1].seen = true;
-        seenArea.push([currX + 2][currY - 1]);
+      obsX = currX + 2;
+      obsY = currY - 1;
+      if (this.isLegalSquare(obsX, obsY)) {
+        updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard, obsX, obsY);
+        updatedBoard[obsX][obsY].seen = true;
+        seenArea.push([obsX][obsY]);
       }
-      if (this.isLegalSquare(currX + 2, currY + 1)) {
-        updatedBoard[currX + 2][currY + 1].color = 'yellow';
-        updatedBoard[currX + 2][currY + 1].seen = true;
-        seenArea.push([currX + 2][currY + 1]);
+      obsX = currX + 2;
+      obsY = currY + 1;
+      if (this.isLegalSquare(obsX, obsY)) {
+        updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard, obsX, obsY);
+        updatedBoard[obsX][obsY].seen = true;
+        seenArea.push([obsX][obsY]);
       }
     }
     return updatedBoard;
@@ -324,25 +370,33 @@ class Board extends React.Component {
   revealRightArea(data, currX, currY, seenArea) {
     let updatedBoard = data;
     updatedBoard[currX][currY].seen = true;
-    if (this.isLegalSquare(currX, currY + 1)) {
-      updatedBoard[currX][currY + 1].color = 'yellow';
-      updatedBoard[currX][currY + 1].seen = true;
-      seenArea.push([currX][currY + 1]);
+    let obsX = currX;
+    let obsY = currY + 2;
+    if (this.isLegalSquare(obsX, obsY)) {
+      updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard, obsX, obsY);
+      updatedBoard[obsX][obsY].seen = true;
+      seenArea.push([obsX][obsY]);
 
-      if (this.isLegalSquare(currX, currY + 2)) {
-        updatedBoard[currX][currY + 2].color = 'yellow';
-        updatedBoard[currX][currY + 2].seen = true;
-        seenArea.push([currX][currY + 1]);
+      obsX = currX;
+      obsY = currY + 2;
+      if (this.isLegalSquare(obsX, obsY)) {
+        updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard, obsX, obsY);
+        updatedBoard[obsX][obsY].seen = true;
+        seenArea.push([obsX][obsY]);
       }
-      if (this.isLegalSquare(currX + 1, currY + 2)) {
-        updatedBoard[currX + 1][currY + 2].color = 'yellow';
-        updatedBoard[currX + 1][currY + 2].seen = true;
-        seenArea.push([currX + 1][currY + 2]);
+      obsX = currX + 1;
+      obsY = currY + 2;
+      if (this.isLegalSquare(obsX, obsY)) {
+        updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard, obsX, obsY);
+        updatedBoard[obsX][obsY].seen = true;
+        seenArea.push([obsX][obsY]);
       }
-      if (this.isLegalSquare(currX - 1, currY + 2)) {
-        updatedBoard[currX - 1][currY + 2].color = 'yellow';
-        updatedBoard[currX - 1][currY + 2].seen = true;
-        seenArea.push([currX - 1][currY + 2]);
+      obsX = currX - 1;
+      obsY = currY + 2;
+      if (this.isLegalSquare(obsX, obsY)) {
+        updatedBoard[obsX][obsY].color = this.determineColor(updatedBoard, obsX, obsY);
+        updatedBoard[obsX][obsY].seen = true;
+        seenArea.push([obsX][obsY]);
       }
     }
     return updatedBoard;
@@ -352,6 +406,28 @@ class Board extends React.Component {
 
   //Vamp_Tree Implementation==================
 
+  //Initialize outgoing edges for all nodes in cell
+  initializeGraph(data) {
+    for (let i = 0; i < data.length; i++) {
+      for (let j = 0; j < data[i].length; j++) {
+        let curr = data[i][j];
+        curr.outEdge = [];
+        if (i > 0) {
+          curr.outEdge.push([i - 1, j]);
+        }
+        if (i < data.length - 1) {
+          curr.outEdge.push([i + 1, j]);
+        }
+        if (j > 0) {
+          curr.outEdge.push([i, j - 1]);
+        }
+        if (j < data[i].length - 1) {
+          curr.outEdge.push([i][j + 1]);
+        }
+      }
+    }
+    return data;
+  }
 
 
 
@@ -360,6 +436,9 @@ class Board extends React.Component {
   /*
   Check if point is out of boundaries
   */
+  determineColor(data, i, j) {
+    return data[i][j].isObstacle ? '#D2691E' : 'yellow'
+  }
   isLegalSquare(i, j) {
     return (i < this.props.row && i >= 0
       && j < this.props.column && j >= 0);

@@ -18,7 +18,7 @@ body {
   }
   
   .square {
-    background: #fff;
+    background: rgba(255, 255, 255, 0.726);
     border: 1px solid #999;
     float: left;
     font-size: 24px;
