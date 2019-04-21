@@ -25,7 +25,7 @@ class Board extends React.Component {
     this.moveUp = this.moveUp.bind(this);
 
     this.state.squares = this.revealArea(this.state.squares, this.props.startPoint[0],
-      this.props.startPoint[1], this.state.areaVisited, "left");
+      this.props.startPoint[1], this.state.areaVisited, "bot");
   }
   //Initialize Array with Cell Objects
   initBoardData(row, column) {
@@ -238,7 +238,7 @@ class Board extends React.Component {
       if (this.isLegalSquare(currX, currY - 2)) {
         updatedBoard[currX][currY - 2].color = 'yellow';
         updatedBoard[currX][currY - 2].seen = true;
-        seenArea.push([currX][currY - 1]);
+        seenArea.push([currX][currY - 2]);
       }
       if (this.isLegalSquare(currX - 1, currY - 2)) {
         updatedBoard[currX - 1][currY - 2].color = 'yellow';
@@ -254,10 +254,56 @@ class Board extends React.Component {
     return updatedBoard;
   }
   revealTopArea(data, currX, currY, seenArea) {
+    let updatedBoard = data;
+    updatedBoard[currX][currY].seen = true;
+    if (this.isLegalSquare(currX - 1, currY)) {
+      updatedBoard[currX - 1][currY].color = 'yellow';
+      updatedBoard[currX - 1][currY].seen = true;
+      seenArea.push([currX - 1][currY]);
 
+      if (this.isLegalSquare(currX - 2, currY)) {
+        updatedBoard[currX - 2][currY].color = 'yellow';
+        updatedBoard[currX - 2][currY].seen = true;
+        seenArea.push([currX - 2][currY]);
+      }
+      if (this.isLegalSquare(currX - 2, currY + 1)) {
+        updatedBoard[currX - 2][currY + 1].color = 'yellow';
+        updatedBoard[currX - 2][currY + 1].seen = true;
+        seenArea.push([currX - 2][currY + 1]);
+      }
+      if (this.isLegalSquare(currX - 2, currY - 1)) {
+        updatedBoard[currX - 2][currY - 1].color = 'yellow';
+        updatedBoard[currX - 2][currY - 1].seen = true;
+        seenArea.push([currX - 2][currY - 1]);
+      }
+    }
+    return updatedBoard;
   }
   revealBotArea(data, currX, currY, seenArea) {
+    let updatedBoard = data;
+    updatedBoard[currX][currY].seen = true;
+    if (this.isLegalSquare(currX + 1, currY)) {
+      updatedBoard[currX + 1][currY].color = 'yellow';
+      updatedBoard[currX + 1][currY].seen = true;
+      seenArea.push([currX + 1][currY]);
 
+      if (this.isLegalSquare(currX + 2, currY)) {
+        updatedBoard[currX + 2][currY].color = 'yellow';
+        updatedBoard[currX + 2][currY].seen = true;
+        seenArea.push([currX + 2][currY]);
+      }
+      if (this.isLegalSquare(currX + 2, currY - 1)) {
+        updatedBoard[currX + 2][currY - 1].color = 'yellow';
+        updatedBoard[currX + 2][currY - 1].seen = true;
+        seenArea.push([currX + 2][currY - 1]);
+      }
+      if (this.isLegalSquare(currX + 2, currY + 1)) {
+        updatedBoard[currX + 2][currY + 1].color = 'yellow';
+        updatedBoard[currX + 2][currY + 1].seen = true;
+        seenArea.push([currX + 2][currY + 1]);
+      }
+    }
+    return updatedBoard;
   }
 
   revealRightArea(data, currX, currY, seenArea) {
