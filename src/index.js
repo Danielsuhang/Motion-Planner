@@ -22,7 +22,12 @@ class Board extends React.Component {
     this.moveBetweenNodes = this.moveBetweenNodes.bind(this);
     this.isCurrentLocation = this.isCurrentLocation.bind(this);
     this.reset = this.reset.bind(this);
+
+
     this.moveUp = this.moveUp.bind(this);
+    this.moveDown = this.moveDown.bind(this);
+    this.moveLeft = this.moveLeft.bind(this);
+    this.moveRight = this.moveRight.bind(this);
 
     this.state.squares = this.revealArea(this.state.squares, this.props.startPoint[0],
       this.props.startPoint[1], this.state.areaVisited, "bot");
@@ -64,7 +69,7 @@ class Board extends React.Component {
   reset() {
     let updatedData = this.initBoardData(this.props.row, this.props.column);
     updatedData = this.revealArea(updatedData, this.props.startPoint[0], this.props.startPoint[1]
-      , [[this.props.row, this.props.column]], "right");
+      , [[this.props.row, this.props.column]], "top");
     this.setState({
       areaVisited: [[this.props.row, this.props.column]],
       currentLocation: this.props.startPoint,
@@ -114,6 +119,18 @@ class Board extends React.Component {
     this.moveBetweenNodes(this.state.currentLocation[0] - 1,
       this.state.currentLocation[1])
   }
+  moveDown() {
+    this.moveBetweenNodes(this.state.currentLocation[0] + 1,
+      this.state.currentLocation[1]);
+  }
+  moveLeft() {
+    this.moveBetweenNodes(this.state.currentLocation[0]
+      , this.state.currentLocation[1] - 1);
+  }
+  moveRight() {
+    this.moveBetweenNodes(this.state.currentLocation[0],
+      this.state.currentLocation[1] + 1);
+  }
   moveBetweenNodes(destI, destJ) {
     let currX = this.state.currentLocation[0];
     let currY = this.state.currentLocation[1];
@@ -125,7 +142,6 @@ class Board extends React.Component {
     if (destI !== currX && destJ !== currY) {
       console.log("Diagonal Movement")
       return;
-      //TODO: Call moveDiagonalNodes
     }
     if (destI === currX && destJ === currY) {
       console.log("Destination node is the same as current location");
@@ -148,7 +164,7 @@ class Board extends React.Component {
           console.log(i, currY)
           updatedBoard[i][currY].color = 'yellow';
           updatedBoard = this.revealArea(updatedBoard,
-            i, currY, seenArea, "right");
+            i, currY, seenArea, "top");
         }
       }
       //If moving down (positive direction)
@@ -156,7 +172,7 @@ class Board extends React.Component {
         for (let i = start; i <= end; i++) {
           updatedBoard[i][currY].color = 'yellow';
           updatedBoard = this.revealArea(updatedBoard,
-            i, currY, seenArea, "right");
+            i, currY, seenArea, "bot");
         }
       }
       updatedBoard[end][currY].color = 'red';
@@ -170,7 +186,7 @@ class Board extends React.Component {
         for (let i = start; i >= end; i--) {
           updatedBoard[currX][i].color = 'yellow';
           updatedBoard = this.revealArea(updatedBoard,
-            currX, i, seenArea, "right");
+            currX, i, seenArea, "left");
         }
       }
       //Moving right (positive direction)
@@ -183,13 +199,12 @@ class Board extends React.Component {
       }
       updatedBoard[currX][end].color = 'red';
 
+      
       currentLocation[0] = currX;
       currentLocation[1] = end;
+      
     }
 
-    //Reveal area in front of new point
-    updatedBoard = this.revealArea(updatedBoard,
-      currentLocation[0], currentLocation[1], seenArea, "right");
 
     this.setState({
       squares: updatedBoard,
@@ -346,8 +361,8 @@ class Board extends React.Component {
   Check if point is out of boundaries
   */
   isLegalSquare(i, j) {
-    return (i < this.props.row && i > 0
-      && j < this.props.column && j > 0);
+    return (i < this.props.row && i >= 0
+      && j < this.props.column && j >= 0);
   }
 
   isCurrentLocation(i, j) {
@@ -412,9 +427,18 @@ class Board extends React.Component {
         <Button varient="contained" color="primary" onClick={this.moveUp}>
           Up
           </Button>
+          <Button varient="contained" color="primary" onClick={this.moveDown}>
+          Down
+          </Button>
+          <Button varient="contained" color="primary" onClick={this.moveLeft}>
+         Left 
+          </Button>
+          <Button varient="contained" color="primary" onClick={this.moveRight}>
+         Right 
+          </Button>
         <Button varient="contained" color="primary"
           onClick={() => { this.moveBetweenNodes(this.state.currentLocation[0], this.state.currentLocation[1] + 5) }}>
-          Move
+          Move Right + 5
           </Button>
         <Button varient="contained" color="primary" onClick={this.reset}>
           Reset
