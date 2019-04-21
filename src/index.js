@@ -25,7 +25,7 @@ class Board extends React.Component {
     this.moveUp = this.moveUp.bind(this);
 
     this.state.squares = this.revealArea(this.state.squares, this.props.startPoint[0],
-      this.props.startPoint[1], this.state.areaVisited);
+      this.props.startPoint[1], this.state.areaVisited, "left");
   }
   //Initialize Array with Cell Objects
   initBoardData(row, column) {
@@ -64,7 +64,7 @@ class Board extends React.Component {
   reset() {
     let updatedData = this.initBoardData(this.props.row, this.props.column);
     updatedData = this.revealArea(updatedData, this.props.startPoint[0], this.props.startPoint[1]
-      ,[[this.props.row, this.props.column]])
+      , [[this.props.row, this.props.column]], "right");
     this.setState({
       areaVisited: [[this.props.row, this.props.column]],
       currentLocation: this.props.startPoint,
@@ -77,7 +77,7 @@ class Board extends React.Component {
     let nextLocation = []
     let updatedBoard = this.revealArea(this.state.squares,
       this.state.currentLocation[0], this.state.currentLocation[1],
-      this.state.areaVisited);
+      this.state.areaVisited, "right");
 
     if (this.isLegalSquare(this.state.currentLocation[0] + 1,
       this.state.currentLocation[1] + 1)) {
@@ -148,7 +148,7 @@ class Board extends React.Component {
           console.log(i, currY)
           updatedBoard[i][currY].color = 'yellow';
           updatedBoard = this.revealArea(updatedBoard,
-            i, currY, seenArea);
+            i, currY, seenArea, "right");
         }
       }
       //If moving down (positive direction)
@@ -156,7 +156,7 @@ class Board extends React.Component {
         for (let i = start; i <= end; i++) {
           updatedBoard[i][currY].color = 'yellow';
           updatedBoard = this.revealArea(updatedBoard,
-            i, currY, seenArea);
+            i, currY, seenArea, "right");
         }
       }
       updatedBoard[end][currY].color = 'red';
@@ -170,15 +170,15 @@ class Board extends React.Component {
         for (let i = start; i >= end; i--) {
           updatedBoard[currX][i].color = 'yellow';
           updatedBoard = this.revealArea(updatedBoard,
-            currX, i, seenArea);
-        } 
+            currX, i, seenArea, "right");
+        }
       }
       //Moving right (positive direction)
       else {
         for (let i = start; i <= end; i++) {
           updatedBoard[currX][i].color = 'yellow';
           updatedBoard = this.revealArea(updatedBoard,
-            currX, i, seenArea);
+            currX, i, seenArea, "right");
         }
       }
       updatedBoard[currX][end].color = 'red';
@@ -189,7 +189,7 @@ class Board extends React.Component {
 
     //Reveal area in front of new point
     updatedBoard = this.revealArea(updatedBoard,
-      currentLocation[0], currentLocation[1], seenArea);
+      currentLocation[0], currentLocation[1], seenArea, "right");
 
     this.setState({
       squares: updatedBoard,
@@ -209,7 +209,58 @@ class Board extends React.Component {
    * Visibility Function: Defines what area the robot can see
    * Narrow Cone Function
    */
-  revealArea(data, currX, currY, seenArea) {
+  revealArea(data, currX, currY, seenArea, direction) {
+    if (direction === 'right') {
+      return this.revealRightArea(data, currX, currY, seenArea);
+    }
+    if (direction === 'left') {
+      return this.revealLeftArea(data, currX, currY, seenArea);
+    }
+    if (direction === 'top') {
+      return this.revealTopArea(data, currX, currY, seenArea);
+    }
+    if (direction === 'bot') {
+      return this.revealBotArea(data, currX, currY, seenArea);
+    }
+
+    console.log("ERROR: Direction " + direction + " must match a valid direction");
+    return data;
+
+  }
+  revealLeftArea(data, currX, currY, seenArea) {
+    let updatedBoard = data;
+    updatedBoard[currX][currY].seen = true;
+    if (this.isLegalSquare(currX, currY - 1)) {
+      updatedBoard[currX][currY - 1].color = 'yellow';
+      updatedBoard[currX][currY - 1].seen = true;
+      seenArea.push([currX][currY - 1]);
+
+      if (this.isLegalSquare(currX, currY - 2)) {
+        updatedBoard[currX][currY - 2].color = 'yellow';
+        updatedBoard[currX][currY - 2].seen = true;
+        seenArea.push([currX][currY - 1]);
+      }
+      if (this.isLegalSquare(currX - 1, currY - 2)) {
+        updatedBoard[currX - 1][currY - 2].color = 'yellow';
+        updatedBoard[currX - 1][currY - 2].seen = true;
+        seenArea.push([currX - 1][currY - 2]);
+      }
+      if (this.isLegalSquare(currX + 1, currY - 2)) {
+        updatedBoard[currX + 1][currY - 2].color = 'yellow';
+        updatedBoard[currX + 1][currY - 2].seen = true;
+        seenArea.push([currX + 1][currY - 2]);
+      }
+    }
+    return updatedBoard;
+  }
+  revealTopArea(data, currX, currY, seenArea) {
+
+  }
+  revealBotArea(data, currX, currY, seenArea) {
+
+  }
+
+  revealRightArea(data, currX, currY, seenArea) {
     let updatedBoard = data;
     updatedBoard[currX][currY].seen = true;
     if (this.isLegalSquare(currX, currY + 1)) {
@@ -319,8 +370,7 @@ class Board extends React.Component {
           onClick={() => { this.moveBetweenNodes(this.state.currentLocation[0], this.state.currentLocation[1] + 5) }}>
           Move
           </Button>
-        <Button varient="contained" color="primary"
-          onClick={this.reset}>
+        <Button varient="contained" color="primary" onClick={this.reset}>
           Reset
           </Button>
 
