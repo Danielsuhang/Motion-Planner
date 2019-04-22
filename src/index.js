@@ -39,12 +39,6 @@ class Board extends React.Component {
 
     this.state.squares = this.revealArea(this.state.squares, this.props.startPoint[0],
       this.props.startPoint[1], "bot");
-      this.state.squares = this.revealArea(this.state.squares, this.props.startPoint[0],
-        this.props.startPoint[1], "top");
-        this.state.squares = this.revealArea(this.state.squares, this.props.startPoint[0],
-          this.props.startPoint[1], "left");
-          this.state.squares = this.revealArea(this.state.squares, this.props.startPoint[0],
-            this.props.startPoint[1], "right");
 
     //Initialize graph nodes 
     this.state.squares = this.initializeGraph(this.state.squares);
@@ -423,6 +417,7 @@ class Board extends React.Component {
   //Vamp_Tree Implementation==================
 
   //Initialize outgoing edges for all nodes in cell
+  //Add diagonal movement
   initializeGraph(data) {
     for (let i = 0; i < data.length; i++) {
       for (let j = 0; j < data[i].length; j++) {
@@ -523,7 +518,6 @@ class Board extends React.Component {
     this.updateStartPoint(updatedData, this.state.currentLocation[0],
       this.state.currentLocation[1], index[0], index[1]);
 
-    //TODO: Determine the direction that the robot is facing when moving to new point
     //Could make it scan in every direction, but not exactly natural and good in practice
     //Path needs to be reproducable
 
@@ -564,9 +558,9 @@ class Board extends React.Component {
     console.log("Successfully traversed to next step with node: ");
   }
 
-/**
- * Continuously performs Tree-Visability Algorithm
- */
+  /**
+   * Continuously performs Tree-Visability Algorithm
+   */
   startAlgorithm() {
 
     let agenda = this.state.agenda.slice();
@@ -576,7 +570,7 @@ class Board extends React.Component {
     while (!this.state.noPath && !this.state.pathFound) {
       steps++;
       let updatedData = this.state.squares.slice();
-      
+
       if (this.state.noPath || this.state.pathFound) {
         console.log("Path already found!");
         return;
@@ -614,7 +608,7 @@ class Board extends React.Component {
         //Node visited already
         continue;
       }
-      
+
       if (next.isObstacle) {
         console.log("Cannot traverse obstacle: " + next);
         continue;
@@ -638,33 +632,32 @@ class Board extends React.Component {
       updatedData = this.state.squares.slice();
 
       //Reveal every direction:
-      this.revealArea(updatedData, index[0], index[1], "top");
-      this.revealArea(updatedData, index[0], index[1], "bot");
-      this.revealArea(updatedData, index[0], index[1], "left");
-      this.revealArea(updatedData, index[0], index[1], "right");
-      
-      //Parent must be adjacent to current
-      // if (next.parent.length !== 0) {
-      //   if (next.parent[0] > index[0]) {
-      //     //Traveled top
-      //     this.revealArea(updatedData, index[0], index[1], "top");
-      //   }
-      //   else if (next.parent[0] < index[0]) {
-      //     //Traveled bot
-      //     this.revealArea(updatedData, index[0], index[1], "bot");
-      //   }
-      //   else if (next.parent[1] > index[1]) {
-      //     //Travel left
-      //     this.revealArea(updatedData, index[0], index[1], "left");
-      //   }
-      //   else if (next.parent[1] < index[1]) {
-      //     //Travel right
-      //     this.revealArea(updatedData, index[0], index[1], "right");
-      //   }
-       
-        
-
-      // }
+      if (next.parent.length !== 0) {
+        if (next.parent[0] > index[0]) {
+          //Traveled top
+          this.revealArea(updatedData, index[0], index[1], "top");
+        }
+        else if (next.parent[0] < index[0]) {
+          //Traveled bot
+          this.revealArea(updatedData, index[0], index[1], "bot");
+        }
+        else if (next.parent[1] > index[1]) {
+          //Travel left
+          this.revealArea(updatedData, index[0], index[1], "left");
+        }
+        else if (next.parent[1] < index[1]) {
+          //Travel right
+          this.revealArea(updatedData, index[0], index[1], "right");
+        }
+        else {
+          console.log("=========================")
+          console.log("ERROR: Parent is the same coordinate as current");
+          console.log("===========================>")
+          console.log(next.parent[0])
+          console.log(next.parent[1])
+  
+        }
+      }
     }
   }
   /**
@@ -736,7 +729,8 @@ class Board extends React.Component {
    * @param {The column coordinate of click} j 
    */
   handleClick(i, j) {
-    console.log(this.state.squares[i][j]);
+    console.log(i,j);
+    console.log(this.state.squares[i][j].parent);
   }
 
 
@@ -844,7 +838,7 @@ class Game extends React.Component {
     //Define board parameters
     let obstacles = [[5, 4], [5, 3], [6, 6], [6, 2]];
     let startPoint = [15, 5];
-    let endPoint = [1,18]
+    let endPoint = [1, 18]
     return (
       <div className="game">
         <div className="game-board">
