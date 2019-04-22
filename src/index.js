@@ -19,6 +19,7 @@ class Board extends React.Component {
       pathFound: false,
       agenda: [[this.props.startPoint[0], this.props.startPoint[1], "bot"]],
       noPath: false,
+      path: [],
     };
 
     //Bindings
@@ -36,6 +37,8 @@ class Board extends React.Component {
 
     this.startAlgorithm = this.startAlgorithm.bind(this);
     this.stepAlgorithm = this.stepAlgorithm.bind(this);
+    this.backtrack = this.backtrack.bind(this);
+    this.reproducePath = this.reproducePath.bind(this);
 
     this.state.squares = this.revealArea(this.state.squares, this.props.startPoint[0],
       this.props.startPoint[1], "bot");
@@ -58,6 +61,7 @@ class Board extends React.Component {
           outEdge: [],
           isEnd: false,
           parent: [],
+
         }
         if (i === this.props.startPoint[0]
           && j === this.props.startPoint[1]) {
@@ -99,6 +103,7 @@ class Board extends React.Component {
       pathFound: false,
       agenda: [[this.props.startPoint[0], this.props.startPoint[1], "bot"]],
       noPath: false,
+      path: [],
     })
   }
   nextStep() {
@@ -250,7 +255,7 @@ class Board extends React.Component {
   updateStartPoint(data, i, j, newI, newJ) {
     let updatedData = data.slice();
     updatedData[i][j].color = (updatedData[i][j].seen) ? 'yellow' : 'white';
-    updatedData[newI][newJ].color = 'red';
+    updatedData[newI][newJ].color = updatedData[newI][newJ].isEnd ? '#7FFF00' : 'red';
     this.setState({
       squares: updatedData,
       currentLocation: [newI, newJ],
@@ -455,7 +460,7 @@ class Board extends React.Component {
 
 
     //If no more agenda    
-    if (agenda.length === 0) {
+    if (agenda.length === 0 || this.allObstaclesUnseen(this.state.squares, agenda)) {
       console.log("No path found!");
       this.setState({
         noPath: true
@@ -503,11 +508,16 @@ class Board extends React.Component {
         //Save parents information (including direction)
         child.parent.push([index[0], index[1], index[2]]);
       }
+      //Push in itself in all directions
+      agenda.push([index[0], index[1], "top"]);
+      agenda.push([index[0], index[1], "bot"]);
+      agenda.push([index[0], index[1], "left"]);
+      agenda.push([index[0], index[1], "right"]);
       //IMPORTANT: Calculate the direction of all children and pass into agenda
       let childIndex = next.outEdge[i]
-        agenda.push([childIndex[0], childIndex[1]
-          , this.determineDirection(index[0], index[1]
-            ,childIndex[0], childIndex[1])]);
+      agenda.push([childIndex[0], childIndex[1]
+        , this.determineDirection(index[0], index[1]
+          , childIndex[0], childIndex[1])]);
     }
 
     //Add node to visited
@@ -522,8 +532,8 @@ class Board extends React.Component {
 
     //Reveal the appropriate direction
     if (next.parent.length !== 0) {
-      this.revealArea(updatedData, index[0], index[1], index[2]); 
-    } 
+      this.revealArea(updatedData, index[0], index[1], index[2]);
+    }
     this.setState({
       agenda: agenda,
       areaVisited: visited
@@ -553,7 +563,7 @@ class Board extends React.Component {
       }
 
       //If no more agenda    
-      if (agenda.length === 0) {
+      if (this.allObstaclesUnseen(updatedData, agenda) || agenda.length === 0) {
         console.log("No path found!");
         this.setState({
           noPath: true
@@ -571,10 +581,11 @@ class Board extends React.Component {
         console.log("Path found!");
         console.log("steps: " + steps);
         //TODO Modify backtrack to include direction
-        next.parent.push([index[0], index[1], index[2]]); 
-        // let path = this.backtrack(index[0], index[1], index[2]);
-        this.setState({
+        this.updateStartPoint(updatedData, currentLocation[0],
+          currentLocation[1], index[0], index[1]);
 
+        this.backtrack(index[0], index[1], index[2], []);
+        this.setState({
           pathFound: true
         })
         break;
@@ -597,11 +608,17 @@ class Board extends React.Component {
         if (child.seen) {
           child.parent.push([index[0], index[1], index[2]]);
         }
+        //Push in itself in all directions
+        agenda.push([index[0], index[1], "top"]);
+        agenda.push([index[0], index[1], "bot"]);
+        agenda.push([index[0], index[1], "left"]);
+        agenda.push([index[0], index[1], "right"]);
+
         //Push all children plus direction
-        let childIndex = next.outEdge[i]
+        let childIndex = next.outEdge[i];
         agenda.push([childIndex[0], childIndex[1]
           , this.determineDirection(index[0], index[1]
-            ,childIndex[0], childIndex[1])]);
+            , childIndex[0], childIndex[1])]);
       }
 
       //Add node to visited
@@ -613,8 +630,8 @@ class Board extends React.Component {
 
       //Reveal the appropriate direction
       if (next.parent.length !== 0) {
-        this.revealArea(updatedData, index[0], index[1], index[2]); 
-      } 
+        this.revealArea(updatedData, index[0], index[1], index[2]);
+      }
     }
     this.setState({
       agenda: agenda,
@@ -624,19 +641,57 @@ class Board extends React.Component {
   /**
    * 
    */
-  backtrack(goalI, goalJ, direction) {
+
+  backtrack(currX, currY, direction, path) {
     //continue backtrack until reach original start point
-    let currX = goalI;
-    let currY = goalJ;
-    let path = []
-    var counter = 0;
-    while (currX !== this.props.startPoint[0] && currY !== this.props.startPoint[1] && counter++ < 5000) {
-      currX = this.state.squares[currX][currY].parent[0];
-      currY = this.state.squares[currX][currY].parent[1];
-      path.push([currX, currY])
+    //If path found
+    console.log("backtracking...")
+    if (currX === this.props.startPoint[0]
+      && currY === this.props.startPoint[1]) {
+      //Add our path to list of solution paths
+      console.log("Actual path found!");
+      for (let i = 0; i < path.length; i++) {
+        console.log(path[i]);
+      }
+      this.setState({
+        path: path,
+      })
+      return -1;
     }
-    return path;
+
+    let currSquare = this.state.squares[currX][currY];
+    for (let i = 0; i < currSquare.parent.length; i++) {
+      let value = currSquare.parent[i];
+
+      //Avoid infinite loops
+      if (this.nodeVisitedNoDirection(path, value[0], value[1])) {
+        continue;
+      }
+      console.log([value[0], value[1], value[2]]);
+      path.push([value[0], value[1], value[2]]);
+      if (this.backtrack(value[0], value[1], value[2], path) === -1) {
+        return -1;
+      }
+      path.pop();
+    }
+    return 1;
+
   }
+  reproducePath() {
+    if (this.state.path.length !== 0) {
+      console.log("Reproduced!")
+      let updatedData = this.state.squares.slice();
+      this.state.path.forEach(value => {
+        updatedData[value[0]][value[1]].color = "green";
+      })
+      updatedData[this.props.startPoint[0]][this.props.startPoint[1]].color = "red";
+
+      this.setState({
+        squares: updatedData
+      })
+    }
+  }
+
 
 
 
@@ -657,7 +712,7 @@ class Board extends React.Component {
     else if (parentIndexJ < currJ) {
       //Travel right
       return "right";
-    } 
+    }
     else {
       return "ERROR";
     }
@@ -669,6 +724,25 @@ class Board extends React.Component {
     var isVisited = false;
     visited.forEach(values => {
       if (values[0] === i && values[1] === j && values[2] === direction) {
+        isVisited = true;
+      }
+    });
+    return isVisited;
+  }
+  allObstaclesUnseen(updatedData, agenda) {
+    let unseen = true;
+    
+    agenda.forEach(value => {
+      if (updatedData[value[0]][value[1]].seen) {
+        unseen = false;
+      }
+    });
+    return unseen;
+  }
+  nodeVisitedNoDirection(visited, i, j) {
+    var isVisited = false;
+    visited.forEach(values => {
+      if (values[0] === i && values[1] === j) {
         isVisited = true;
       }
     });
@@ -710,7 +784,7 @@ class Board extends React.Component {
    * @param {The column coordinate of click} j 
    */
   handleClick(i, j) {
-    console.log(i,j);
+    console.log(i, j);
     console.log(this.state.squares[i][j]);
   }
 
@@ -767,6 +841,9 @@ class Board extends React.Component {
         <Button varient="contained" color="primary" onClick={this.reset}>
           Reset
           </Button>
+        <Button varient="contained" color="primary" onClick={this.reproducePath}>
+          Create Path
+          </Button>
         <Row>
           <div>
             {this.createGrid(this.state.squares.length)}
@@ -774,7 +851,7 @@ class Board extends React.Component {
           <div style={{ marginLeft: '20px' }}>
             <b>Agenda:</b>
             {this.state.agenda.map((value, index) => {
-              if (this.state.agenda[0] === value) {
+              if (value === 0) {
                 return (
                   <div key={value + index + value + index}>
                     <b> Coordinate: ({value[0]}, {value[1]}, {value[2]}) </b>
@@ -782,11 +859,19 @@ class Board extends React.Component {
                 );
               }
               else {
-                return (
-                  <div key={value + index + value + index}>
+                if (index < 15) {
+                  return (
+                    <div key={value + index + value + index}>
+                      Coordinate: ({value[0]}, {value[1]}, {value[2]})
+                    </div>
+                  );
+                }
+                if (index === 15) {
+                  return (<div key={value + index + value + index}>
                     Coordinate: ({value[0]}, {value[1]}, {value[2]})
-                  </div>
-                );
+                  <div> ... </div>
+                  </div>);
+                }
               }
             })
             }
@@ -798,16 +883,35 @@ class Board extends React.Component {
           </div>
 
           <div style={{ marginLeft: '30px' }}>
-            
+
             <b> {this.state.areaVisited.length} Visited Nodes </b>
             <br />
             {this.state.areaVisited.map((value, index) => {
-              return (
-                <div key={value + index + value + index}> ({value[0]}, {value[1]}, {value[2]}) </div>
-              );
+              if (index < 15) {
+                return (
+                  <div key={value + index + value + index}> ({value[0]}, {value[1]}, {value[2]}) </div>
+                );
+              }
+              if (index === 15) {
+                return (
+                  <div key={value + index + value + index}> ({value[0]}, {value[1]}, {value[2]})
+                  <div> ... </div>
+                  </div>
+                );
+              }
+
             })}
           </div>
+
         </Row>
+        <div>
+          <b> {this.state.path.length} Length Solution Path </b>
+          {this.state.path.map((value, index) => {
+            return (<div key={value + index + value + index}>
+              ({value[0]}, {value[1]}, {value[2]})
+            </div>);
+          })}
+        </div>
 
 
       </div>
@@ -819,8 +923,8 @@ class Game extends React.Component {
   render() {
     //Define board parameters
     let obstacles = [[5, 4], [5, 3], [6, 6], [6, 2]];
-    let startPoint = [15, 5];
-    let endPoint = [1, 17]
+    let startPoint = [4, 4];
+    let endPoint = [19,18]
     return (
       <div className="game">
         <div className="game-board">
