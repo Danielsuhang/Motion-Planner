@@ -17,7 +17,7 @@ class Board extends React.Component {
       obstacle: this.props.obstacles,
       endLocation: this.props.endPoint,
       pathFound: false,
-      agenda: [this.props.startPoint],
+      agenda: [[this.props.startPoint[0], this.props.startPoint[1], "bot"]],
       noPath: false,
     };
 
@@ -97,7 +97,7 @@ class Board extends React.Component {
       obstacle: this.props.obstacles,
       endLocation: this.props.endPoint,
       pathFound: false,
-      agenda: [this.props.startPoint],
+      agenda: [[this.props.startPoint[0], this.props.startPoint[1], "bot"]],
       noPath: false,
     })
   }
@@ -162,7 +162,6 @@ class Board extends React.Component {
     if (destI === this.state.endLocation[0]
       && destJ === this.state.endLocation[1]) {
       console.log("Path found!")
-      //TODO: Find path
       this.setState({
         pathFound: true
       });
@@ -474,10 +473,7 @@ class Board extends React.Component {
       })
     }
 
-    console.log("current node is: ");
-    console.log(next);
-    console.log()
-    if (this.nodeVisited(visited, index[0], index[1])) {
+    if (this.nodeVisited(visited, index[0], index[1], index[2])) {
       //Node visited already
       console.log("Node already visited");
       this.setState({
@@ -486,13 +482,9 @@ class Board extends React.Component {
       return;
     }
     if (!next.seen) {
-      agenda.push(index);
+      agenda.push([index[0], index[1], index[2]]);
       console.log("Node hasn't been seen yet, " +
         "add back to Queue for future consideration");
-      console.log(next)
-      console.log()
-      console.log("updated agenda:");
-      console.log(agenda)
       this.setState({
         agenda: agenda,
       })
@@ -508,13 +500,18 @@ class Board extends React.Component {
     for (let i = 0; i < next.outEdge.length; i++) {
       let child = updatedData[next.outEdge[i][0]][next.outEdge[i][1]];
       if (child.seen) {
-        child.parent = [index[0], index[1]];
+        //Save parents information (including direction)
+        child.parent.push([index[0], index[1], index[2]]);
       }
-      agenda.push(next.outEdge[i]);
+      //IMPORTANT: Calculate the direction of all children and pass into agenda
+      let childIndex = next.outEdge[i]
+        agenda.push([childIndex[0], childIndex[1]
+          , this.determineDirection(index[0], index[1]
+            ,childIndex[0], childIndex[1])]);
     }
 
     //Add node to visited
-    visited.push(index);
+    visited.push([index[0], index[1], index[2]]);
     this.updateStartPoint(updatedData, this.state.currentLocation[0],
       this.state.currentLocation[1], index[0], index[1]);
 
@@ -523,33 +520,10 @@ class Board extends React.Component {
 
     //Determine the direction the robot is facing
 
-    //Parent must be adjacent to current
+    //Reveal the appropriate direction
     if (next.parent.length !== 0) {
-      if (next.parent[0] > index[0]) {
-        //Traveled top
-        this.revealArea(updatedData, index[0], index[1], "top");
-      }
-      else if (next.parent[0] < index[0]) {
-        //Traveled bot
-        this.revealArea(updatedData, index[0], index[1], "bot");
-      }
-      else if (next.parent[1] > index[1]) {
-        //Travel left
-        this.revealArea(updatedData, index[0], index[1], "left");
-      }
-      else if (next.parent[1] < index[1]) {
-        //Travel right
-        this.revealArea(updatedData, index[0], index[1], "right");
-      }
-      else {
-        console.log("=========================")
-        console.log("ERROR: Parent is the same coordinate as current");
-        console.log("===========================>")
-        console.log(next.parent[0])
-        console.log(next.parent[1])
-
-      }
-    }
+      this.revealArea(updatedData, index[0], index[1], index[2]); 
+    } 
     this.setState({
       agenda: agenda,
       areaVisited: visited
@@ -557,6 +531,8 @@ class Board extends React.Component {
 
     console.log("Successfully traversed to next step with node: ");
   }
+
+
 
   /**
    * Continuously performs Tree-Visability Algorithm
@@ -573,7 +549,7 @@ class Board extends React.Component {
 
       if (this.state.noPath || this.state.pathFound) {
         console.log("Path already found!");
-        return;
+        break;
       }
 
       //If no more agenda    
@@ -582,29 +558,29 @@ class Board extends React.Component {
         this.setState({
           noPath: true
         })
-        return;
+        break;
       }
 
       let index = agenda.shift();
       let next = this.state.squares[index[0]][index[1]];
       if (!next.seen) {
-        agenda.push(index);
+        agenda.push([index[0], index[1], index[2]]);
         continue;
       }
       if (next.isEnd) {
         console.log("Path found!");
         console.log("steps: " + steps);
-        let path = this.backtrack(index[0], index[1]);
-        console.log(path)
-        console.log(path.length)
-        console.log()
+        //TODO Modify backtrack to include direction
+        next.parent.push([index[0], index[1], index[2]]); 
+        // let path = this.backtrack(index[0], index[1], index[2]);
         this.setState({
+
           pathFound: true
         })
-        return;
+        break;
       }
 
-      if (this.nodeVisited(visited, index[0], index[1])) {
+      if (this.nodeVisited(visited, index[0], index[1], index[2])) {
         //Node visited already
         continue;
       }
@@ -619,51 +595,36 @@ class Board extends React.Component {
       for (let i = 0; i < next.outEdge.length; i++) {
         let child = updatedData[next.outEdge[i][0]][next.outEdge[i][1]];
         if (child.seen) {
-          child.parent = [index[0], index[1]];
+          child.parent.push([index[0], index[1], index[2]]);
         }
-        agenda.push(next.outEdge[i]);
+        //Push all children plus direction
+        let childIndex = next.outEdge[i]
+        agenda.push([childIndex[0], childIndex[1]
+          , this.determineDirection(index[0], index[1]
+            ,childIndex[0], childIndex[1])]);
       }
 
       //Add node to visited
-      visited.push(index);
+      visited.push([index[0], index[1], index[2]]);
       this.updateStartPoint(updatedData, currentLocation[0],
         currentLocation[1], index[0], index[1]);
       currentLocation = index;
       updatedData = this.state.squares.slice();
 
-      //Reveal every direction:
+      //Reveal the appropriate direction
       if (next.parent.length !== 0) {
-        if (next.parent[0] > index[0]) {
-          //Traveled top
-          this.revealArea(updatedData, index[0], index[1], "top");
-        }
-        else if (next.parent[0] < index[0]) {
-          //Traveled bot
-          this.revealArea(updatedData, index[0], index[1], "bot");
-        }
-        else if (next.parent[1] > index[1]) {
-          //Travel left
-          this.revealArea(updatedData, index[0], index[1], "left");
-        }
-        else if (next.parent[1] < index[1]) {
-          //Travel right
-          this.revealArea(updatedData, index[0], index[1], "right");
-        }
-        else {
-          console.log("=========================")
-          console.log("ERROR: Parent is the same coordinate as current");
-          console.log("===========================>")
-          console.log(next.parent[0])
-          console.log(next.parent[1])
-  
-        }
-      }
+        this.revealArea(updatedData, index[0], index[1], index[2]); 
+      } 
     }
+    this.setState({
+      agenda: agenda,
+      areaVisited: visited
+    })
   }
   /**
    * 
    */
-  backtrack(goalI, goalJ) {
+  backtrack(goalI, goalJ, direction) {
     //continue backtrack until reach original start point
     let currX = goalI;
     let currY = goalJ;
@@ -680,14 +641,34 @@ class Board extends React.Component {
 
 
   //Helper methods============================
-
+  determineDirection(parentIndexI, parentIndexJ, currI, currJ) {
+    if (parentIndexI > currI) {
+      //Traveled top
+      return "top";
+    }
+    else if (parentIndexI < currI) {
+      //Traveled bot
+      return "bot";
+    }
+    else if (parentIndexJ > currJ) {
+      //Travel left
+      return "left";
+    }
+    else if (parentIndexJ < currJ) {
+      //Travel right
+      return "right";
+    } 
+    else {
+      return "ERROR";
+    }
+  }
   /*
   Check if point is out of boundaries
   */
-  nodeVisited(visited, i, j) {
+  nodeVisited(visited, i, j, direction) {
     var isVisited = false;
     visited.forEach(values => {
-      if (values[0] === i && values[1] === j) {
+      if (values[0] === i && values[1] === j && values[2] === direction) {
         isVisited = true;
       }
     });
@@ -730,7 +711,7 @@ class Board extends React.Component {
    */
   handleClick(i, j) {
     console.log(i,j);
-    console.log(this.state.squares[i][j].parent);
+    console.log(this.state.squares[i][j]);
   }
 
 
@@ -796,14 +777,14 @@ class Board extends React.Component {
               if (this.state.agenda[0] === value) {
                 return (
                   <div key={value + index + value + index}>
-                    <b> Coordinate: ({value[0]}, {value[1]}) </b>
+                    <b> Coordinate: ({value[0]}, {value[1]}, {value[2]}) </b>
                   </div>
                 );
               }
               else {
                 return (
                   <div key={value + index + value + index}>
-                    Coordinate: ({value[0]}, {value[1]})
+                    Coordinate: ({value[0]}, {value[1]}, {value[2]})
                   </div>
                 );
               }
@@ -817,11 +798,12 @@ class Board extends React.Component {
           </div>
 
           <div style={{ marginLeft: '30px' }}>
-            <b>Visited Nodes </b>
+            
+            <b> {this.state.areaVisited.length} Visited Nodes </b>
             <br />
             {this.state.areaVisited.map((value, index) => {
               return (
-                <div key={value + index + value + index}> ({value[0]}, {value[1]}) </div>
+                <div key={value + index + value + index}> ({value[0]}, {value[1]}, {value[2]}) </div>
               );
             })}
           </div>
@@ -838,7 +820,7 @@ class Game extends React.Component {
     //Define board parameters
     let obstacles = [[5, 4], [5, 3], [6, 6], [6, 2]];
     let startPoint = [15, 5];
-    let endPoint = [1, 18]
+    let endPoint = [1, 17]
     return (
       <div className="game">
         <div className="game-board">
