@@ -12,7 +12,8 @@ class Board extends React.Component {
       rows: this.props.row,
       columns: this.props.column,
       areaVisited: [],
-      squares: this.initBoardData(this.props.row, this.props.column),
+      squares: this.initBoardData(this.props.row, this.props.column
+        , this.props.startPoint, this.props.endPoint, this.props.obstacles),
       currentLocation: this.props.startPoint,
       obstacle: this.props.obstacles,
       endLocation: this.props.endPoint,
@@ -27,7 +28,10 @@ class Board extends React.Component {
     this.updateStartPoint = this.updateStartPoint.bind(this);
     this.moveBetweenNodes = this.moveBetweenNodes.bind(this);
     this.isCurrentLocation = this.isCurrentLocation.bind(this);
+
     this.reset = this.reset.bind(this);
+    this.resetNarrow = this.resetNarrow.bind(this);
+    this.resetNoPath = this.resetNoPath.bind(this);
 
 
     this.moveUp = this.moveUp.bind(this);
@@ -47,7 +51,7 @@ class Board extends React.Component {
     this.state.squares = this.initializeGraph(this.state.squares);
   }
   //Initialize Array with Cell Objects
-  initBoardData(row, column) {
+  initBoardData(row, column, startPoint, endPoint, obstacles) {
     let data = []
     for (let i = 0; i < row; i++) {
       data.push([]);
@@ -63,17 +67,17 @@ class Board extends React.Component {
           parent: [],
 
         }
-        if (i === this.props.startPoint[0]
-          && j === this.props.startPoint[1]) {
+        if (i === startPoint[0]
+          && j === startPoint[1]) {
           data[i][j].color = 'red';
           data[i][j].seen = true;
         }
-        else if (i === this.props.endPoint[0]
-          && j === this.props.endPoint[1]) {
+        else if (i === endPoint[0]
+          && j === endPoint[1]) {
           data[i][j].color = 'green';
           data[i][j].isEnd = true;
         }
-        else if (this.checkObstacle(i, j)) {
+        else if (this.checkObstacle(i, j, obstacles)) {
           data[i][j].color = 'black';
           data[i][j].isObstacle = true;
         }
@@ -90,7 +94,8 @@ class Board extends React.Component {
   then moves horizontally/vertically
   */
   reset() {
-    let updatedData = this.initBoardData(this.props.row, this.props.column);
+    let updatedData = this.initBoardData(this.props.row, this.props.column
+      , this.props.startPoint, this.props.endPoint, this.props.obstacles)
     updatedData = this.revealArea(updatedData, this.props.startPoint[0], this.props.startPoint[1]
       , "bot");
     updatedData = this.initializeGraph(updatedData);
@@ -105,6 +110,54 @@ class Board extends React.Component {
       noPath: false,
       path: [],
     })
+  }
+  resetNoPath() {
+    
+    let obstacles = [[5, 4], [5, 3], [6, 6], [6, 2], [6,1], [6,5], 
+    [7,6], [8,6], [6,6], [5,6], [4,6], [3,6], [2,6], [1,6], [9,6], [10,6], [11,6],
+  [12,6], [13,6], [14,6], [15,6], [16,6], [17,6], [18,6], [19,6], [18,7], [18,8],
+[18,9], [18,10], [18,11], [18,12], [18,13],[0,6]];
+    let endPoint = [19,10]; 
+    let updatedData = this.initBoardData(this.props.row, this.props.column,
+      this.props.startPoint, endPoint, obstacles);
+    updatedData = this.revealArea(updatedData, this.props.startPoint[0], this.props.startPoint[1]
+      , "bot");
+    updatedData = this.initializeGraph(updatedData);
+    this.setState({
+      areaVisited: [],
+      currentLocation: this.props.startPoint,
+      squares: updatedData,
+      obstacle: obstacles,
+      endLocation: endPoint,
+      pathFound: false,
+      agenda: [[this.props.startPoint[0], this.props.startPoint[1], "bot"]],
+      noPath: false,
+      path: [],
+    })
+  }
+  resetNarrow() {
+    
+    let obstacles = [[5, 4], [5, 3], [6, 6], [6, 2], [6,1], [6,5], 
+    [7,6], [8,6], [6,6], [5,6], [4,6], [3,6], [2,6], [1,6], [9,6], [10,6], [11,6],
+  [12,6], [13,6], [14,6], [15,6], [16,6], [17,6], [18,6], [19,6], [18,7], [18,8],
+[18,9], [18,10], [18,11], [18,12], [18,13]];
+    let endPoint = [19,10]; 
+    let updatedData = this.initBoardData(this.props.row, this.props.column,
+      this.props.startPoint, endPoint, obstacles);
+    updatedData = this.revealArea(updatedData, this.props.startPoint[0], this.props.startPoint[1]
+      , "bot");
+    updatedData = this.initializeGraph(updatedData);
+    this.setState({
+      areaVisited: [],
+      currentLocation: this.props.startPoint,
+      squares: updatedData,
+      obstacle: obstacles,
+      endLocation: endPoint,
+      pathFound: false,
+      agenda: [[this.props.startPoint[0], this.props.startPoint[1], "bot"]],
+      noPath: false,
+      path: [],
+    }) 
   }
   nextStep() {
     let nextLocation = []
@@ -765,10 +818,10 @@ class Board extends React.Component {
   /*****
  * Handling Initialization of Board
  */
-  checkObstacle(row, column) {
-    for (let i = 0; i < this.props.obstacles.length; i++) {
-      let x = this.props.obstacles[i][0];
-      let y = this.props.obstacles[i][1];
+  checkObstacle(row, column, obstacles) {
+    for (let i = 0; i < obstacles.length; i++) {
+      let x = obstacles[i][0];
+      let y = obstacles[i][1];
       if (row === x && column === y) {
         return true;
       }
@@ -820,19 +873,10 @@ class Board extends React.Component {
     return (
       <div>
         <Button varient="contained" color="primary" onClick={this.startAlgorithm}>
-          continuousRun
+          Run
           </Button>
-        <Button varient="contained" color="primary" onClick={this.moveUp}>
-          Up
-          </Button>
-        <Button varient="contained" color="primary" onClick={this.moveDown}>
-          Down
-          </Button>
-        <Button varient="contained" color="primary" onClick={this.moveLeft}>
-          Left
-          </Button>
-        <Button varient="contained" color="primary" onClick={this.moveRight}>
-          Right
+          <Button varient="contained" color="primary" onClick={this.reproducePath}>
+          Create Path
           </Button>
         <Button varient="contained" color="primary"
           onClick={this.stepAlgorithm}>
@@ -841,8 +885,11 @@ class Board extends React.Component {
         <Button varient="contained" color="primary" onClick={this.reset}>
           Reset
           </Button>
-        <Button varient="contained" color="primary" onClick={this.reproducePath}>
-          Create Path
+          <Button varient="contained" color="primary" onClick={this.resetNarrow}>
+          Narrow Path
+          </Button>
+          <Button varient="contained" color="primary" onClick={this.resetNoPath}>
+          No Path
           </Button>
         <Row>
           <div>
@@ -922,9 +969,10 @@ class Board extends React.Component {
 class Game extends React.Component {
   render() {
     //Define board parameters
-    let obstacles = [[5, 4], [5, 3], [6, 6], [6, 2]];
-    let startPoint = [4, 4];
-    let endPoint = [19,18]
+    let obstacles = [[5, 4], [5, 3], [6, 6], [6, 2], [6,1], [6,5], 
+    [7,6], [8,6], [6,6], [5,6], [4,6], [3,6]];
+    let startPoint = [10,1];
+    let endPoint = [19,10]
     return (
       <div className="game">
         <div className="game-board">
